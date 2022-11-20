@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from currency.models import Currency, Offer, Deal
+from currency.models import Currency, Deal, Offer
 
 
 @admin.register(Currency)
