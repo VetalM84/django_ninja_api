@@ -2,41 +2,45 @@
 
 from typing import List
 
-from asgiref.sync import sync_to_async
-from django.db.models import Count
 from django.shortcuts import get_object_or_404
 from ninja import NinjaAPI
+from ninja.pagination import paginate
 
 from currency.models import Currency, Offer
-from currency.schemas import CurrenciesOut, OfferIn
+from currency.schemas import CurrencyBase, ErrorMsg, OfferIn, CurrencyIn
 
 api = NinjaAPI()
 
 
-@api.get("/")
-def hello(request):
+@api.get("/", tags=["Server status"])
+def server_status(request):
+    """Check server health status."""
     return {"Server": "running..."}
 
 
-@api.get("/currency/", response=List[CurrenciesOut], tags=["Currency"])
+@api.get(
+    "/currency/all/",
+    response={200: List[CurrencyBase], 404: ErrorMsg},
+    tags=["Currency"],
+)
+@paginate()
 def get_currencies(request):
     """Get all currencies."""
-    currency_list = Currency.objects.annotate(offers_count=Count("currencies_to_sell"))
+    currency_list = Currency.objects.all()
+    if len(currency_list) == 0:
+        return 404, {"message": "Nothing found"}
+    # currency_list = Currency.objects.annotate(offers_count=Count("currencies_to_sell"))
     return currency_list
 
 
-@api.post("/offer/", tags=["Offer"])
-def add_offer(request, payload: OfferIn):
-
-    # currency_to_sell = Currency.objects.get(id=payload.currency_to_sell)
-    # currency_to_buy = Currency.objects.get(id=payload.currency_to_buy)
-    # user = User.objects.get(id=payload.user)
-    # payload.currency_to_sell = currency_to_sell
-    # payload.currency_to_buy = currency_to_buy
-    # payload.user = user
-    # print(payload)
-    offer = Offer.objects.create(**payload.dict())
-    return {"id": offer.pk}
+@api.post("/currency/", response={201: CurrencyBase, 400: ErrorMsg}, tags=["Currency"])
+def add_currency(request, payload: CurrencyIn):
+    """Add new currency."""
+    currency = Currency.objects.filter(code__iexact=payload.code)
+    if len(currency) > 0:
+        return 400, {"message": "Currency with that code already exists"}
+    # currency.create(**payload.dict())
+    return 201, currency.create(**payload.dict())
 
 
 @api.delete("/currency/{currency_id}", tags=["Currency"])
@@ -45,6 +49,13 @@ def delete_currency(request, currency_id: int):
     currency = get_object_or_404(Currency, pk=currency_id)
     currency.delete()
     return {"success": True}
+
+
+@api.post("/offer/", tags=["Offer"])
+def add_offer(request, payload: OfferIn):
+    """Add new offer."""
+    offer = Offer.objects.create(**payload.dict())
+    return {"id": offer.pk}
 
 
 @api.delete("/offer/{offer_id}", tags=["Offer"])
