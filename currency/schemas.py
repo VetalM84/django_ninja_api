@@ -8,7 +8,7 @@ from currency.models import Currency, Offer
 class CurrenciesOut(ModelSchema):
     class Config:
         model = Currency
-        model_fields = ["id", "code", "country", "image"]
+        model_fields = ["id", "code", "name", "image"]
 
 
 class OfferIn(Schema):

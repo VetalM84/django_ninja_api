@@ -87,13 +87,13 @@ class Deal(models.Model):
     """Deal model."""
 
     seller = models.ForeignKey(
-        to=User, on_delete=models.PROTECT, related_name="", verbose_name="Seller"
+        to=User, related_name="sellers", on_delete=models.PROTECT, verbose_name="Seller"
     )
     buyer = models.ForeignKey(
-        to=User, on_delete=models.PROTECT, related_name="", verbose_name="Buyer"
+        to=User, related_name="buyers", on_delete=models.PROTECT, verbose_name="Buyer"
     )
     offer = models.ForeignKey(
-        to=Offer, on_delete=models.PROTECT, related_name="", verbose_name="Offer"
+        to="Offer", on_delete=models.PROTECT, verbose_name="Offer"
     )
     deal_time = models.DateTimeField(auto_now=True, verbose_name="Time")
 
