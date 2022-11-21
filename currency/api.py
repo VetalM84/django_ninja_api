@@ -7,7 +7,7 @@ from ninja import NinjaAPI
 from ninja.pagination import paginate
 
 from currency.models import Currency, Offer
-from currency.schemas import CurrencyBase, ErrorMsg, OfferIn, CurrencyIn
+from currency.schemas import CurrencyBase, CurrencyIn, ErrorMsg, OfferIn
 
 api = NinjaAPI()
 
@@ -36,18 +36,15 @@ def get_currencies(request):
 @api.post("/currency/", response={201: CurrencyBase, 400: ErrorMsg}, tags=["Currency"])
 def add_currency(request, payload: CurrencyIn):
     """Add new currency."""
-    currency = Currency.objects.filter(code__iexact=payload.code)
-    if len(currency) > 0:
+    if Currency.objects.filter(code__iexact=payload.code).exists():
         return 400, {"message": "Currency with that code already exists"}
-    # currency.create(**payload.dict())
-    return 201, currency.create(**payload.dict())
+    return 201, Currency.objects.create(**payload.dict())
 
 
 @api.delete("/currency/{currency_id}", tags=["Currency"])
 def delete_currency(request, currency_id: int):
     """Delete currency."""
-    currency = get_object_or_404(Currency, pk=currency_id)
-    currency.delete()
+    get_object_or_404(Currency, pk=currency_id).delete()
     return {"success": True}
 
 
