@@ -1,6 +1,7 @@
 """Currency app's DB models."""
 
 from django.contrib.auth.models import User
+from django.core.exceptions import ValidationError
 from django.db import models
 
 
@@ -21,6 +22,8 @@ class Currency(models.Model):
 
     def save(self, *args, **kwargs):
         """Transform currency code to uppercase on save."""
+        if len(self.code) != 3:
+            raise ValidationError("Currency code length must be equal to 3 chars")
         self.code = self.code.upper()
         super().save(*args, **kwargs)
 
