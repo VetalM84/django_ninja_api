@@ -19,6 +19,16 @@ def server_status(request):
 
 
 @api.get(
+    "/currency/{currency_id}",
+    response=CurrencyBase,
+    tags=["Currency"],
+)
+def get_currency(request, currency_id: int):
+    """Get single currency."""
+    return get_object_or_404(Currency, pk=currency_id)
+
+
+@api.get(
     "/currency/all/",
     response={200: List[CurrencyBase], 404: ErrorMsg},
     tags=["Currency"],
@@ -39,6 +49,20 @@ def add_currency(request, payload: CurrencyIn):
     if Currency.objects.filter(code__iexact=payload.code).exists():
         return 400, {"message": "Currency with that code already exists"}
     return 201, Currency.objects.create(**payload.dict())
+
+
+@api.put(
+    "/currency/{currency_id}",
+    response={200: CurrencyBase},
+    tags=["Currency"],
+)
+def edit_currency(request, currency_id: int, payload: CurrencyIn):
+    """Edit currency."""
+    currency = get_object_or_404(Currency, pk=currency_id)
+    for attr, value in payload.dict().items():
+        setattr(currency, attr, value)
+    currency.save()
+    return 200, {**payload.dict()}
 
 
 @api.delete("/currency/{currency_id}", tags=["Currency"])
