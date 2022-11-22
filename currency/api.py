@@ -7,7 +7,7 @@ from django.shortcuts import get_object_or_404
 from ninja import NinjaAPI
 from ninja.pagination import paginate
 
-from currency.models import Currency, Offer
+from currency.models import Currency, Offer, Deal
 from currency.schemas import (
     CurrencyBase,
     CurrencyIn,
@@ -16,8 +16,7 @@ from currency.schemas import (
     OfferIn,
     OfferState,
     UserBase,
-    UserModel,
-    UserDataOut,
+    UserExtraDataOut, DealBase, DealExtraDataOut,
 )
 
 api = NinjaAPI()
@@ -51,14 +50,14 @@ def add_new_currency(request, payload: CurrencyIn):
     return 201, Currency.objects.create(**payload.dict())
 
 
-@api.put("/currencies/{currency_id}", response={200: CurrencyBase}, tags=["Currency"])
+@api.put("/currencies/{currency_id}", response=CurrencyBase, tags=["Currency"])
 def edit_currency(request, currency_id: int, payload: CurrencyIn):
     """Edit currency."""
     currency = get_object_or_404(Currency, pk=currency_id)
     for attr, value in payload.dict().items():
         setattr(currency, attr, value)
     currency.save()
-    return 200, {**payload.dict()}
+    return currency
 
 
 @api.delete("/currencies/{currency_id}", tags=["Currency"])
@@ -76,9 +75,9 @@ def get_single_offer(request, offer_id: int):
 
 @api.get("/offers", response=List[OfferBase], tags=["Offer"])
 @paginate()
-def get_all_offers(request):
+def get_all_active_offers(request):
     """Get all offers with pagination."""
-    return Offer.objects.all()
+    return Offer.objects.filter(active_state=True)
 
 
 @api.get("/users/{user_id}/offers", response=List[OfferBase], tags=["Offer", "User"])
@@ -126,8 +125,20 @@ def delete_offer(request, offer_id: int):
     return {"success": True}
 
 
-@api.get("/users/{user_id}", response=UserDataOut, tags=["User"])
+@api.get("/users/{user_id}", response=UserExtraDataOut, tags=["User"])
 def get_user_info(request, user_id):
-    """Get user information."""
+    """Get user profile information with offers and deals."""
     user = get_object_or_404(User, pk=user_id)
     return user
+
+
+@api.get("/deals/{deal_id}", response=DealBase, tags=["Deal"])
+def get_single_deal(request, deal_id):
+    """Get single deal."""
+    deal = get_object_or_404(Deal, pk=deal_id)
+    return deal
+
+
+@api.get("/deals", response=List[DealBase], tags=["Deal"])
+def get_all_deals(request):
+    return Deal.objects.all()

@@ -3,14 +3,7 @@
 from datetime import datetime
 from typing import List
 
-from ninja import ModelSchema, Schema
-
-from currency.models import Currency, Deal, Offer, User
-
-# class CurrenciesOut(ModelSchema):
-#     class Config:
-#         model = Currency
-#         model_fields = ["id", "code", "name", "image"]
+from ninja import Schema
 
 
 class CurrencyBase(Schema):
@@ -53,28 +46,38 @@ class OfferState(Schema):
     active_state: bool
 
 
+class DealBase(Schema):
+    """Base deal schema for GET method."""
+
+    id: int
+    seller_id: int
+    buyer_id: int
+    offer_id: int
+    deal_time: datetime = None
+
+
 class UserBase(Schema):
     """Base user schema for GET method."""
 
     id: int
-    username = str
-    first_name = str
-    last_name = str
-    email = str
+    username: str
+    first_name: str
+    last_name: str
+    email: str
 
 
-class UserModel(ModelSchema):
-    class Config:
-        model = User
-        model_fields = ["id", "username", "first_name", "last_name", "email"]
+class DealExtraDataOut(Schema):
+    """Extended user schema with extra data response."""
+
+    sold: List[DealBase]
+    bought: List[DealBase]
 
 
-class UserDataOut(UserBase):
+class UserExtraDataOut(UserBase):
     """Extended user schema with extra data response."""
 
     offers: List[OfferBase]
-    # TODO add Deals
-    # deals: List[DealBase]
+    deals: DealExtraDataOut
 
 
 class ErrorMsg(Schema):

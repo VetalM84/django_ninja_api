@@ -75,10 +75,6 @@ class Offer(models.Model):
             + str(self.exchange_rate)
         )
 
-    def disable_offer(self):
-        """Disable offer upon deal."""
-        self.state = False
-
     class Meta:
         """Meta properties."""
 
@@ -90,10 +86,10 @@ class Deal(models.Model):
     """Deal model."""
 
     seller = models.ForeignKey(
-        to=User, related_name="sellers", on_delete=models.PROTECT, verbose_name="Seller"
+        to=User, related_name="sold", on_delete=models.PROTECT, verbose_name="Seller"
     )
     buyer = models.ForeignKey(
-        to=User, related_name="buyers", on_delete=models.PROTECT, verbose_name="Buyer"
+        to=User, related_name="bought", on_delete=models.PROTECT, verbose_name="Buyer"
     )
     offer = models.ForeignKey(
         to="Offer", on_delete=models.PROTECT, verbose_name="Offer"
