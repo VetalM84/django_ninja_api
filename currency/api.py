@@ -16,7 +16,10 @@ from currency.schemas import (
     OfferIn,
     OfferState,
     UserBase,
-    UserExtraDataOut, DealBase, DealExtraDataOut,
+    UserExtraDataOut,
+    DealBase,
+    OfferWithDealOut,
+    DealIn,
 )
 
 api = NinjaAPI()
@@ -70,7 +73,14 @@ def delete_currency(request, currency_id: int):
 @api.get("/offers/{offer_id}", response=OfferBase, tags=["Offer"])
 def get_single_offer(request, offer_id: int):
     """Get single offer."""
-    return get_object_or_404(Offer, pk=offer_id)
+    offer = get_object_or_404(Offer, pk=offer_id)
+    # deal = Deal.objects.get(offer_id=offer_id)
+    # prefetch = Prefetch("deal_set", queryset=deal, to_attr='deals_set')
+    # offer = Offer.objects.prefetch_related(prefetch).get(pk=offer_id)
+    # o = offer.deal_set.values()
+    # offer = Offer.objects.get(pk=offer_id)
+    # offer.prefetch_related(Prefetch("deal_set", queryset=deal, to_attr='deals'))
+    return offer
 
 
 @api.get("/offers", response=List[OfferBase], tags=["Offer"])
@@ -129,6 +139,7 @@ def delete_offer(request, offer_id: int):
 def get_user_info(request, user_id):
     """Get user profile information with offers and deals."""
     user = get_object_or_404(User, pk=user_id)
+    # u = user.bought.values()
     return user
 
 
@@ -142,3 +153,14 @@ def get_single_deal(request, deal_id):
 @api.get("/deals", response=List[DealBase], tags=["Deal"])
 def get_all_deals(request):
     return Deal.objects.all()
+
+
+@api.post("/deals", response={201: DealBase, 400: ErrorMsg}, tags=["Deal"])
+def add_new_deal(request, payload: DealIn):
+    """Add new deal."""
+    if (
+        Deal.objects.filter(offer_id=payload.offer_id).exists()
+        or not Offer.objects.get(pk=payload.offer_id).active_state
+    ):
+        return 400, {"message": "You can't make a deal to this offer"}
+    return 201, Deal.objects.create(**payload.dict())

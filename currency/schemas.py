@@ -21,6 +21,22 @@ class CurrencyIn(CurrencyBase):
     id: int = None
 
 
+class DealBase(Schema):
+    """Base deal schema for GET method."""
+
+    id: int
+    seller_id: int
+    buyer_id: int
+    offer_id: int
+    deal_time: datetime = None
+
+
+class DealIn(DealBase):
+    """Deal schema for POST method."""
+
+    id: int = None
+
+
 class OfferBase(Schema):
     """Base offer schema for GET method, response."""
 
@@ -32,6 +48,7 @@ class OfferBase(Schema):
     user_id: int
     added_time: datetime = None
     active_state: bool = True
+    deals_set: DealBase
 
 
 class OfferIn(OfferBase):
@@ -46,14 +63,10 @@ class OfferState(Schema):
     active_state: bool
 
 
-class DealBase(Schema):
-    """Base deal schema for GET method."""
+class OfferWithDealOut(OfferBase):
+    """Offer schema for POST method."""
 
-    id: int
-    seller_id: int
-    buyer_id: int
-    offer_id: int
-    deal_time: datetime = None
+    deal: List[DealBase]
 
 
 class UserBase(Schema):
@@ -77,7 +90,9 @@ class UserExtraDataOut(UserBase):
     """Extended user schema with extra data response."""
 
     offers: List[OfferBase]
-    deals: DealExtraDataOut
+    sold: List[DealBase]
+    bought: List[DealBase]
+    # deals: DealExtraDataOut
 
 
 class ErrorMsg(Schema):
