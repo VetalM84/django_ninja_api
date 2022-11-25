@@ -4,6 +4,7 @@ from datetime import datetime
 from typing import List
 
 from ninja import Schema
+from pydantic import Field
 
 
 class CurrencyBase(Schema):
@@ -48,7 +49,6 @@ class OfferBase(Schema):
     user_id: int
     added_time: datetime = None
     active_state: bool = True
-    deals_set: DealBase
 
 
 class OfferIn(OfferBase):
@@ -66,7 +66,13 @@ class OfferState(Schema):
 class OfferWithDealOut(OfferBase):
     """Offer schema for POST method."""
 
-    deal: List[DealBase]
+    deal: List[DealBase] = Field(..., alias="deal_set")
+
+
+class DealExtraDataOut(DealBase):
+    """Extended deal schema with offer data response."""
+
+    offer: OfferBase
 
 
 class UserBase(Schema):
@@ -79,20 +85,10 @@ class UserBase(Schema):
     email: str
 
 
-class DealExtraDataOut(Schema):
-    """Extended user schema with extra data response."""
-
-    sold: List[DealBase]
-    bought: List[DealBase]
-
-
 class UserExtraDataOut(UserBase):
     """Extended user schema with extra data response."""
 
-    offers: List[OfferBase]
-    sold: List[DealBase]
-    bought: List[DealBase]
-    # deals: DealExtraDataOut
+    offers: List[OfferWithDealOut]
 
 
 class ErrorMsg(Schema):

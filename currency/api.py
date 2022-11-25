@@ -1,5 +1,4 @@
 """API routes."""
-
 from typing import List
 
 from django.contrib.auth.models import User
@@ -7,19 +6,19 @@ from django.shortcuts import get_object_or_404
 from ninja import NinjaAPI
 from ninja.pagination import paginate
 
-from currency.models import Currency, Offer, Deal
+from currency.models import Currency, Deal, Offer
 from currency.schemas import (
     CurrencyBase,
     CurrencyIn,
+    DealBase,
+    DealIn,
     ErrorMsg,
     OfferBase,
     OfferIn,
     OfferState,
-    UserBase,
-    UserExtraDataOut,
-    DealBase,
     OfferWithDealOut,
-    DealIn,
+    UserBase,
+    UserExtraDataOut, DealExtraDataOut,
 )
 
 api = NinjaAPI()
@@ -70,17 +69,10 @@ def delete_currency(request, currency_id: int):
     return {"success": True}
 
 
-@api.get("/offers/{offer_id}", response=OfferBase, tags=["Offer"])
+@api.get("/offers/{offer_id}", response=OfferWithDealOut, tags=["Offer"])
 def get_single_offer(request, offer_id: int):
-    """Get single offer."""
-    offer = get_object_or_404(Offer, pk=offer_id)
-    # deal = Deal.objects.get(offer_id=offer_id)
-    # prefetch = Prefetch("deal_set", queryset=deal, to_attr='deals_set')
-    # offer = Offer.objects.prefetch_related(prefetch).get(pk=offer_id)
-    # o = offer.deal_set.values()
-    # offer = Offer.objects.get(pk=offer_id)
-    # offer.prefetch_related(Prefetch("deal_set", queryset=deal, to_attr='deals'))
-    return offer
+    """Get single offer with corresponding deal if any."""
+    return get_object_or_404(Offer, pk=offer_id)
 
 
 @api.get("/offers", response=List[OfferBase], tags=["Offer"])
@@ -128,22 +120,21 @@ def toggle_offer_state(request, offer_id, payload: OfferState):
     return offer
 
 
-@api.delete("/offers/{offer_id}", tags=["Offer"])
+@api.delete("/offers/{offer_id}", response={204: None}, tags=["Offer"])
 def delete_offer(request, offer_id: int):
     """Delete offer."""
-    get_object_or_404(Offer, pk=offer_id).delete()
-    return {"success": True}
+    offer = get_object_or_404(Offer, pk=offer_id)
+    offer.delete()
+    return 204, None
 
 
 @api.get("/users/{user_id}", response=UserExtraDataOut, tags=["User"])
 def get_user_info(request, user_id):
     """Get user profile information with offers and deals."""
-    user = get_object_or_404(User, pk=user_id)
-    # u = user.bought.values()
-    return user
+    return get_object_or_404(User, pk=user_id)
 
 
-@api.get("/deals/{deal_id}", response=DealBase, tags=["Deal"])
+@api.get("/deals/{deal_id}", response=DealExtraDataOut, tags=["Deal"])
 def get_single_deal(request, deal_id):
     """Get single deal."""
     deal = get_object_or_404(Deal, pk=deal_id)
@@ -158,9 +149,7 @@ def get_all_deals(request):
 @api.post("/deals", response={201: DealBase, 400: ErrorMsg}, tags=["Deal"])
 def add_new_deal(request, payload: DealIn):
     """Add new deal."""
-    if (
-        Deal.objects.filter(offer_id=payload.offer_id).exists()
-        or not Offer.objects.get(pk=payload.offer_id).active_state
-    ):
+    deal = get_object_or_404(Deal, offer_id=payload.offer_id)
+    if not deal.offer.active_state or deal.offer.user.pk != payload.seller_id:
         return 400, {"message": "You can't make a deal to this offer"}
     return 201, Deal.objects.create(**payload.dict())
