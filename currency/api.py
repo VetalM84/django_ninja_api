@@ -11,14 +11,14 @@ from currency.schemas import (
     CurrencyBase,
     CurrencyIn,
     DealBase,
+    DealExtraDataOut,
     DealIn,
     ErrorMsg,
     OfferBase,
     OfferIn,
     OfferState,
     OfferWithDealOut,
-    UserBase,
-    UserExtraDataOut, DealExtraDataOut,
+    UserExtraDataOut,
 )
 
 api = NinjaAPI()
@@ -62,11 +62,11 @@ def edit_currency(request, currency_id: int, payload: CurrencyIn):
     return currency
 
 
-@api.delete("/currencies/{currency_id}", tags=["Currency"])
+@api.delete("/currencies/{currency_id}", response={204: None}, tags=["Currency"])
 def delete_currency(request, currency_id: int):
     """Delete currency."""
     get_object_or_404(Currency, pk=currency_id).delete()
-    return {"success": True}
+    return 204, None
 
 
 @api.get("/offers/{offer_id}", response=OfferWithDealOut, tags=["Offer"])
