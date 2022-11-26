@@ -52,14 +52,14 @@ def add_new_currency(request, payload: CurrencyIn):
     return 201, Currency.objects.create(**payload.dict())
 
 
-@api.put("/currencies/{currency_id}", response=CurrencyBase, tags=["Currency"])
+@api.put("/currencies/{currency_id}", response={200: CurrencyBase}, tags=["Currency"])
 def edit_currency(request, currency_id: int, payload: CurrencyIn):
     """Edit currency."""
     currency = get_object_or_404(Currency, pk=currency_id)
     for attr, value in payload.dict().items():
         setattr(currency, attr, value)
     currency.save()
-    return currency
+    return 200, currency
 
 
 @api.delete("/currencies/{currency_id}", response={204: None}, tags=["Currency"])
