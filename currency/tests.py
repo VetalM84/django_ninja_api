@@ -178,3 +178,48 @@ class TestAPI(TestCase):
         """Test GET all offers by sell currency with pagination."""
         response = self.client.get(path="/api/currencies/1/offers?limit=100&offset=0")
         self.assertContains(response=response, text='"currency_to_sell_id": 1')
+
+    def test_add_new_offer(self):
+        """Test POST new offer."""
+        data = {
+          "currency_to_sell_id": 1,
+          "currency_to_buy_id": 2,
+          "amount": 100.25,
+          "exchange_rate": 10.44,
+          "user_id": 2,
+        }
+        response = self.client.post(
+            path="/api/offers", data=data, content_type="application/json"
+        )
+        self.assertEqual(response.status_code, 201)
+
+    def test_toggle_offer_state(self):
+        """Test toggle offer state (enable/disable)."""
+        data = {
+          "active_state": False
+        }
+        response = self.client.patch(
+            path="/api/offers/1", data=data, content_type="application/json"
+        )
+        self.assertEqual(response.status_code, 200)
+
+    def test_toggle_offer_state_404(self):
+        """Test toggle offer state (enable/disable) fails."""
+        data = {
+          "active_state": True
+        }
+        response = self.client.patch(
+            path="/api/offers/1111", data=data, content_type="application/json"
+        )
+        self.assertEqual(response.status_code, 404)
+
+    def test_delete_offer(self):
+        """Test DELETE offer."""
+        response = self.client.delete(path="/api/offers/1")
+        # TODO fix FK
+        self.assertEqual(response.status_code, 204)
+
+    def test_delete_offer_404(self):
+        """Test DELETE offer fails."""
+        response = self.client.delete(path="/api/offers/111")
+        self.assertEqual(response.status_code, 404)

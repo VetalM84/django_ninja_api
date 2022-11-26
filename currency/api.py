@@ -100,10 +100,10 @@ def get_all_offers_by_sell_currency(request, currency_to_sell_id):
     return Offer.objects.filter(currency_to_sell_id=currency_to_sell_id)
 
 
-@api.post("/offers", response=OfferBase, tags=["Offer"])
+@api.post("/offers", response={201: OfferBase}, tags=["Offer"])
 def add_new_offer(request, payload: OfferIn):
     """Add new offer."""
-    return Offer.objects.create(**payload.dict())
+    return 201, Offer.objects.create(**payload.dict())
 
 
 @api.patch(
