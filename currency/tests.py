@@ -1,8 +1,9 @@
 """Test cases for Django API framework."""
 
+from django.contrib.auth.models import User
 from django.test import TestCase
 
-from currency.models import Currency
+from currency.models import Currency, Deal, Offer
 
 
 class TestAPI(TestCase):
@@ -28,6 +29,34 @@ class TestAPI(TestCase):
         ]
         currency_list = [Currency(**data_dict) for data_dict in currency_data]
         Currency.objects.bulk_create(currency_list)
+        User.objects.create_user(
+            username="TestUserName",
+            email="test@test.com",
+            password="test",
+            first_name="TestFirstName",
+            last_name="TestLastName",
+        )
+        User.objects.create_user(
+            username="TestUserName2",
+            email="test2@test.com",
+            password="test2",
+            first_name="TestFirstName2",
+            last_name="TestLastName2",
+        )
+        Offer.objects.create(
+            id=1,
+            currency_to_sell_id=1,
+            currency_to_buy_id=2,
+            amount=1000,
+            exchange_rate=9,
+            user_id=1,
+        )
+        Deal.objects.create(
+            id=1,
+            seller_id=1,
+            buyer_id=2,
+            offer_id=1,
+        )
 
     @classmethod
     def tearDownClass(cls):
@@ -64,7 +93,7 @@ class TestAPI(TestCase):
 
     def test_get_all_currencies(self):
         """Test GET all currencies."""
-        response = self.client.get(path="/api/currencies")
+        response = self.client.get(path="/api/currencies?limit=100&offset=0")
         self.assertEqual(response.status_code, 200)
 
     def test_add_new_currency(self):
@@ -79,7 +108,7 @@ class TestAPI(TestCase):
         )
         self.assertEqual(response.status_code, 201)
 
-    def test_add_existing_currency(self):
+    def test_add_currency_400(self):
         """Test POST existing currency."""
         data = {
             "code": "USD",
@@ -103,7 +132,7 @@ class TestAPI(TestCase):
         )
         self.assertEqual(response.status_code, 200)
 
-    def test_edit_currency_fail(self):
+    def test_edit_currency_404(self):
         """Test PUT currency fail."""
         data = {
             "code": "UAH",
@@ -120,7 +149,32 @@ class TestAPI(TestCase):
         response = self.client.delete(path="/api/currencies/1")
         self.assertEqual(response.status_code, 204)
 
-    def test_delete_currency_fail(self):
+    def test_delete_currency_404(self):
         """Test DELETE currency fail."""
         response = self.client.delete(path="/api/currencies/111")
         self.assertEqual(response.status_code, 404)
+
+    def test_get_single_offer(self):
+        """Test GET single offer."""
+        response = self.client.get(path="/api/offers/1")
+        self.assertContains(response=response, text="seller_id")
+
+    def test_get_single_offer_404(self):
+        """Test GET single offer fail."""
+        response = self.client.get(path="/api/offers/111")
+        self.assertEqual(response.status_code, 404)
+
+    def test_get_all_active_offers(self):
+        """Test GET all active offers."""
+        response = self.client.get(path="/api/offers?limit=100&offset=0")
+        self.assertEqual(response.status_code, 200)
+
+    def test_get_user_offers(self):
+        """Test GET all user offers."""
+        response = self.client.get(path="/api/users/1/offers?limit=100&offset=0")
+        self.assertContains(response=response, text='"active_state": true')
+
+    def test_get_all_offers_by_sell_currency(self):
+        """Test GET all offers by sell currency with pagination."""
+        response = self.client.get(path="/api/currencies/1/offers?limit=100&offset=0")
+        self.assertContains(response=response, text='"currency_to_sell_id": 1')
