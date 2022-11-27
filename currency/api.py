@@ -2,6 +2,7 @@
 from typing import List
 
 from django.contrib.auth.models import User
+from django.db.models import ProtectedError
 from django.shortcuts import get_object_or_404
 from ninja import NinjaAPI
 from ninja.pagination import paginate
@@ -62,11 +63,16 @@ def edit_currency(request, currency_id: int, payload: CurrencyIn):
     return 200, currency
 
 
-@api.delete("/currencies/{currency_id}", response={204: None}, tags=["Currency"])
+@api.delete(
+    "/currencies/{currency_id}", response={204: None, 400: ErrorMsg}, tags=["Currency"]
+)
 def delete_currency(request, currency_id: int):
     """Delete currency."""
-    get_object_or_404(Currency, pk=currency_id).delete()
-    return 204, None
+    try:
+        get_object_or_404(Currency, pk=currency_id).delete()
+        return 204, None
+    except ProtectedError:
+        return 400, {"message": "You can't delete currency having any offer."}
 
 
 @api.get("/offers/{offer_id}", response=OfferWithDealOut, tags=["Offer"])
@@ -86,7 +92,7 @@ def get_all_active_offers(request):
 @paginate()
 def get_user_offers(request, user_id):
     """Get all user offers with pagination."""
-    return Offer.objects.filter(user_id=user_id)
+    return Offer.objects.filter(seller_id=user_id)
 
 
 @api.get(
@@ -120,12 +126,15 @@ def toggle_offer_state(request, offer_id, payload: OfferState):
     return offer
 
 
-@api.delete("/offers/{offer_id}", response={204: None}, tags=["Offer"])
+@api.delete("/offers/{offer_id}", response={204: None, 400: ErrorMsg}, tags=["Offer"])
 def delete_offer(request, offer_id: int):
     """Delete offer."""
-    offer = get_object_or_404(Offer, pk=offer_id)
-    offer.delete()
-    return 204, None
+    try:
+        offer = get_object_or_404(Offer, pk=offer_id)
+        offer.delete()
+        return 204, None
+    except ProtectedError:
+        return 400, {"message": "You can't delete an offer having any deal"}
 
 
 @api.get("/users/{user_id}", response=UserExtraDataOut, tags=["User"])
@@ -150,6 +159,6 @@ def get_all_deals(request):
 def add_new_deal(request, payload: DealIn):
     """Add new deal."""
     deal = get_object_or_404(Deal, offer_id=payload.offer_id)
-    if not deal.offer.active_state or deal.offer.user.pk != payload.seller_id:
+    if not deal.offer.active_state or deal.offer.seller.pk != payload.seller_id:
         return 400, {"message": "You can't make a deal to this offer"}
     return 201, Deal.objects.create(**payload.dict())

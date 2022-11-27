@@ -1,5 +1,6 @@
 """Currency app's DB models."""
 
+from django.contrib import admin
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.db import models
@@ -59,8 +60,8 @@ class Offer(models.Model):
         null=False,
         verbose_name="Exchange rate",
     )
-    user = models.ForeignKey(
-        to=User, on_delete=models.CASCADE, related_name="offers", verbose_name="User"
+    seller = models.ForeignKey(
+        to=User, on_delete=models.CASCADE, related_name="offers", verbose_name="Seller"
     )
     added_time = models.DateTimeField(auto_now=True, verbose_name="Added")
     active_state = models.BooleanField(default=True, verbose_name="Active state")
@@ -85,9 +86,6 @@ class Offer(models.Model):
 class Deal(models.Model):
     """Deal model."""
 
-    seller = models.ForeignKey(
-        to=User, related_name="sold", on_delete=models.PROTECT, verbose_name="Seller"
-    )
     buyer = models.ForeignKey(
         to=User, related_name="bought", on_delete=models.PROTECT, verbose_name="Buyer"
     )
@@ -98,7 +96,12 @@ class Deal(models.Model):
 
     def __str__(self):
         """String representation of the object."""
-        return self.seller.username + " -> " + self.buyer.username
+        return self.offer.seller.username + " -> " + self.buyer.username
+
+    @admin.display
+    def seller(self):
+        """Get seller data for admin list."""
+        return self.offer.seller
 
     class Meta:
         """Meta properties."""

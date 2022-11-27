@@ -26,7 +26,6 @@ class DealBase(Schema):
     """Base deal schema for GET method."""
 
     id: int
-    seller_id: int
     buyer_id: int
     offer_id: int
     deal_time: datetime = None
@@ -46,7 +45,7 @@ class OfferBase(Schema):
     currency_to_buy_id: int
     amount: float
     exchange_rate: float
-    user_id: int
+    seller_id: int
     added_time: datetime = None
     active_state: bool = True
 

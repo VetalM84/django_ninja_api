@@ -23,7 +23,7 @@ class OfferAdmin(admin.ModelAdmin):
         "currency_to_buy",
         "amount",
         "exchange_rate",
-        "user",
+        "seller",
         "added_time",
         "active_state",
     )
@@ -45,5 +45,5 @@ class DealAdmin(admin.ModelAdmin):
         "deal_time",
     )
     list_display_links = ("id", "seller", "buyer", "offer", "deal_time")
-    ordering = ("deal_time", "seller", "buyer")
+    ordering = ("deal_time",)
     search_fields = ("seller", "buyer")
