@@ -1,5 +1,7 @@
 """Test cases for Django API framework."""
 
+from unittest import skip
+
 from django.contrib.auth.models import User
 from django.test import TestCase
 
@@ -26,6 +28,12 @@ class TestAPI(TestCase):
                 "name": "US Dollar",
                 "image": "usd.jpg",
             },
+            {
+                "id": 3,
+                "code": "CAD",
+                "name": "Canadian Dollar",
+                "image": "cad.jpg",
+            },
         ]
         currency_list = [Currency(**data_dict) for data_dict in currency_data]
         Currency.objects.bulk_create(currency_list)
@@ -49,11 +57,18 @@ class TestAPI(TestCase):
             currency_to_buy_id=2,
             amount=1000,
             exchange_rate=9,
-            user_id=1,
+            seller_id=1,
+        )
+        Offer.objects.create(
+            id=2,
+            currency_to_sell_id=1,
+            currency_to_buy_id=2,
+            amount=1000,
+            exchange_rate=9,
+            seller_id=1,
         )
         Deal.objects.create(
             id=1,
-            seller_id=1,
             buyer_id=2,
             offer_id=1,
         )
@@ -146,13 +161,16 @@ class TestAPI(TestCase):
 
     def test_delete_currency(self):
         """Test DELETE currency."""
-        response = self.client.delete(path="/api/currencies/1")
+        response = self.client.delete(path="/api/currencies/3")
         self.assertEqual(response.status_code, 204)
 
-    def test_delete_currency_404(self):
+    def test_delete_currency_404_400(self):
         """Test DELETE currency fail."""
         response = self.client.delete(path="/api/currencies/111")
         self.assertEqual(response.status_code, 404)
+
+        response = self.client.delete(path="/api/currencies/1")
+        self.assertEqual(response.status_code, 400)
 
     def test_get_single_offer(self):
         """Test GET single offer."""
@@ -182,11 +200,11 @@ class TestAPI(TestCase):
     def test_add_new_offer(self):
         """Test POST new offer."""
         data = {
-          "currency_to_sell_id": 1,
-          "currency_to_buy_id": 2,
-          "amount": 100.25,
-          "exchange_rate": 10.44,
-          "user_id": 2,
+            "currency_to_sell_id": 1,
+            "currency_to_buy_id": 2,
+            "amount": 100.25,
+            "exchange_rate": 10.44,
+            "seller_id": 2,
         }
         response = self.client.post(
             path="/api/offers", data=data, content_type="application/json"
@@ -195,9 +213,7 @@ class TestAPI(TestCase):
 
     def test_toggle_offer_state(self):
         """Test toggle offer state (enable/disable)."""
-        data = {
-          "active_state": False
-        }
+        data = {"active_state": False}
         response = self.client.patch(
             path="/api/offers/1", data=data, content_type="application/json"
         )
@@ -205,9 +221,7 @@ class TestAPI(TestCase):
 
     def test_toggle_offer_state_404(self):
         """Test toggle offer state (enable/disable) fails."""
-        data = {
-          "active_state": True
-        }
+        data = {"active_state": True}
         response = self.client.patch(
             path="/api/offers/1111", data=data, content_type="application/json"
         )
@@ -215,11 +229,46 @@ class TestAPI(TestCase):
 
     def test_delete_offer(self):
         """Test DELETE offer."""
-        response = self.client.delete(path="/api/offers/1")
-        # TODO fix FK
+        response = self.client.delete(path="/api/offers/2")
         self.assertEqual(response.status_code, 204)
 
-    def test_delete_offer_404(self):
+    def test_delete_offer_404_400(self):
         """Test DELETE offer fails."""
         response = self.client.delete(path="/api/offers/111")
         self.assertEqual(response.status_code, 404)
+
+        response = self.client.delete(path="/api/offers/1")
+        self.assertEqual(response.status_code, 400)
+
+    def test_get_user_info(self):
+        """Test GET user profile information with offers and deals."""
+        response = self.client.get(path="/api/users/1")
+        self.assertContains(response=response, text="offers")
+        self.assertContains(response=response, text="deal")
+
+    def test_get_single_deal(self):
+        """Test GET single deal."""
+        response = self.client.get(path="/api/deals/1")
+        self.assertContains(response=response, text="offer")
+
+    def test_get_single_deal_404(self):
+        """Test GET single deal fail."""
+        response = self.client.get(path="/api/deals/111")
+        self.assertEqual(response.status_code, 404)
+
+    def test_get_all_deals(self):
+        """Test GET all deals."""
+        response = self.client.get(path="/api/deals?limit=100&offset=0")
+        self.assertEqual(response.status_code, 200)
+
+    @skip
+    def test_add_new_deal(self):
+        """Test POST new deal."""
+        data = {
+            "buyer_id": 100.25,
+            "offer_id": 10.44,
+        }
+        response = self.client.post(
+            path="/api/offers", data=data, content_type="application/json"
+        )
+        self.assertEqual(response.status_code, 201)
