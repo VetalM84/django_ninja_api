@@ -2,6 +2,7 @@
 from typing import List
 
 from django.contrib.auth.models import User
+from django.db import IntegrityError
 from django.db.models import ProtectedError
 from django.shortcuts import get_object_or_404
 from ninja import NinjaAPI
@@ -158,7 +159,11 @@ def get_all_deals(request):
 @api.post("/deals", response={201: DealBase, 400: ErrorMsg}, tags=["Deal"])
 def add_new_deal(request, payload: DealIn):
     """Add new deal."""
-    deal = get_object_or_404(Deal, offer_id=payload.offer_id)
-    if not deal.offer.active_state or deal.offer.seller.pk != payload.seller_id:
+    offer = get_object_or_404(Offer, pk=payload.offer_id)
+    if not offer.active_state or offer.seller.pk == payload.buyer_id:
         return 400, {"message": "You can't make a deal to this offer"}
-    return 201, Deal.objects.create(**payload.dict())
+    try:
+        deal = Deal.objects.create(**payload.dict())
+        return 201, deal
+    except IntegrityError:
+        return 400, {"message": "You can't make a deal to this offer"}
