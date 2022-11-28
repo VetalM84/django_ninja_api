@@ -89,7 +89,7 @@ class Deal(models.Model):
     buyer = models.ForeignKey(
         to=User, related_name="bought", on_delete=models.PROTECT, verbose_name="Buyer"
     )
-    offer = models.ForeignKey(
+    offer = models.OneToOneField(
         to="Offer", on_delete=models.PROTECT, verbose_name="Offer"
     )
     deal_time = models.DateTimeField(auto_now=True, verbose_name="Time")
