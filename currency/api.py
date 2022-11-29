@@ -35,7 +35,8 @@ def server_status(request):
 @api.get("/currencies/{currency_id}", response=CurrencyBase, tags=["Currency"])
 def get_single_currency(request, currency_id: int):
     """Get single currency."""
-    return get_object_or_404(Currency, pk=currency_id)
+    currency = get_object_or_404(Currency, pk=currency_id)
+    return currency
 
 
 @api.get("/currencies", response=List[CurrencyBase], tags=["Currency"])
@@ -43,7 +44,8 @@ def get_single_currency(request, currency_id: int):
 def get_all_currencies(request):
     """Get all currencies."""
     # currency_list = Currency.objects.annotate(offers_count=Count("currencies_to_sell"))
-    return Currency.objects.all()
+    currencies = Currency.objects.all()
+    return currencies
 
 
 @api.post("/currencies", response={201: CurrencyBase, 400: ErrorMsg}, tags=["Currency"])
@@ -51,7 +53,8 @@ def add_new_currency(request, payload: CurrencyIn):
     """Add new currency."""
     if Currency.objects.filter(code__iexact=payload.code).exists():
         return 400, {"message": "Currency with that code already exists"}
-    return 201, Currency.objects.create(**payload.dict())
+    currency = Currency.objects.create(**payload.dict())
+    return 201, currency
 
 
 @api.put("/currencies/{currency_id}", response={200: CurrencyBase}, tags=["Currency"])
@@ -79,21 +82,24 @@ def delete_currency(request, currency_id: int):
 @api.get("/offers/{offer_id}", response=OfferWithDealOut, tags=["Offer"])
 def get_single_offer(request, offer_id: int):
     """Get single offer with corresponding deal if any."""
-    return get_object_or_404(Offer, pk=offer_id)
+    offer = get_object_or_404(Offer, pk=offer_id)
+    return offer
 
 
 @api.get("/offers", response=List[OfferBase], tags=["Offer"])
 @paginate()
 def get_all_active_offers(request):
     """Get all offers with pagination."""
-    return Offer.objects.filter(active_state=True)
+    offers = Offer.objects.filter(active_state=True)
+    return offers
 
 
 @api.get("/users/{user_id}/offers", response=List[OfferBase], tags=["Offer", "User"])
 @paginate()
 def get_user_offers(request, user_id):
     """Get all user offers with pagination."""
-    return Offer.objects.filter(seller_id=user_id)
+    offers = Offer.objects.filter(seller_id=user_id)
+    return offers
 
 
 @api.get(
@@ -104,13 +110,15 @@ def get_user_offers(request, user_id):
 @paginate()
 def get_all_offers_by_sell_currency(request, currency_to_sell_id):
     """Get all offers by sell currency with pagination."""
-    return Offer.objects.filter(currency_to_sell_id=currency_to_sell_id)
+    offers = Offer.objects.filter(currency_to_sell_id=currency_to_sell_id)
+    return offers
 
 
 @api.post("/offers", response={201: OfferBase}, tags=["Offer"])
 def add_new_offer(request, payload: OfferIn):
     """Add new offer."""
-    return 201, Offer.objects.create(**payload.dict())
+    offer = Offer.objects.create(**payload.dict())
+    return 201, offer
 
 
 @api.patch(
@@ -141,7 +149,8 @@ def delete_offer(request, offer_id: int):
 @api.get("/users/{user_id}", response=UserExtraDataOut, tags=["User"])
 def get_user_info(request, user_id):
     """Get user profile information with offers and deals."""
-    return get_object_or_404(User, pk=user_id)
+    user = get_object_or_404(User, pk=user_id)
+    return user
 
 
 @api.get("/deals/{deal_id}", response=DealExtraDataOut, tags=["Deal"])
@@ -153,7 +162,8 @@ def get_single_deal(request, deal_id):
 
 @api.get("/deals", response=List[DealBase], tags=["Deal"])
 def get_all_deals(request):
-    return Deal.objects.all()
+    deals = Deal.objects.all()
+    return deals
 
 
 @api.post("/deals", response={201: DealBase, 400: ErrorMsg}, tags=["Deal"])
