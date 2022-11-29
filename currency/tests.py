@@ -5,6 +5,7 @@ from unittest import skip
 from django.contrib.auth.models import User
 from django.test import TestCase
 
+from currency import api
 from currency.models import Currency, Deal, Offer
 
 
@@ -81,11 +82,19 @@ class TestAPI(TestCase):
 
     def setUp(self):
         """Set up method."""
+        self.headers = {"Content-Type": "application/json", "token": "token"}
+
         print("SetUp")
 
     def tearDown(self):
         """Tear down method."""
         print("TearDown")
+
+    def test_create_token(self):
+        """Test create token method."""
+        token = api.create_token("TestUserName")
+        print(type(token))
+        self.assertTrue(token, str)
 
     def test_server_status(self):
         """Test server status response."""
@@ -120,7 +129,10 @@ class TestAPI(TestCase):
             "image": "/uah.jpg",
         }
         response = self.client.post(
-            path="/api/currencies", data=data, content_type="application/json"
+            path="/api/currencies",
+            data=data,
+            content_type="application/json",
+            headers=self.headers,
         )
         self.assertEqual(response.status_code, 201)
 
