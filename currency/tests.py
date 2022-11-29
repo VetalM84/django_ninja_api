@@ -261,14 +261,36 @@ class TestAPI(TestCase):
         response = self.client.get(path="/api/deals?limit=100&offset=0")
         self.assertEqual(response.status_code, 200)
 
-    @skip
     def test_add_new_deal(self):
         """Test POST new deal."""
         data = {
-            "buyer_id": 100.25,
-            "offer_id": 10.44,
+            "buyer_id": 2,
+            "offer_id": 2,
         }
         response = self.client.post(
-            path="/api/offers", data=data, content_type="application/json"
+            path="/api/deals", data=data, content_type="application/json"
         )
         self.assertEqual(response.status_code, 201)
+
+    def test_add_new_deal_404_400(self):
+        """Test POST new deal."""
+        response = self.client.post(
+            path="/api/deals",
+            data={"buyer_id": 2, "offer_id": 55},
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 404)
+
+        response = self.client.post(
+            path="/api/deals",
+            data={"buyer_id": 1, "offer_id": 1},
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 400)
+
+        response = self.client.post(
+            path="/api/deals",
+            data={"buyer_id": 2, "offer_id": 2},
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 400)
