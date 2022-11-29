@@ -281,16 +281,10 @@ class TestAPI(TestCase):
         )
         self.assertEqual(response.status_code, 404)
 
+        # test user can not buy own offer
         response = self.client.post(
             path="/api/deals",
             data={"buyer_id": 1, "offer_id": 1},
-            content_type="application/json",
-        )
-        self.assertEqual(response.status_code, 400)
-
-        response = self.client.post(
-            path="/api/deals",
-            data={"buyer_id": 2, "offer_id": 2},
             content_type="application/json",
         )
         self.assertEqual(response.status_code, 400)
