@@ -28,6 +28,7 @@ class DealBase(Schema):
     id: int
     buyer_id: int
     offer_id: int
+    amount: float
     deal_time: datetime = None
 
 

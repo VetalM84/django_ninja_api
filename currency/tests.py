@@ -71,6 +71,7 @@ class TestAPI(TestCase):
             id=1,
             buyer_id=2,
             offer_id=1,
+            amount=100,
         )
 
     @classmethod
@@ -266,6 +267,7 @@ class TestAPI(TestCase):
         data = {
             "buyer_id": 2,
             "offer_id": 2,
+            "amount": 100,
         }
         response = self.client.post(
             path="/api/deals", data=data, content_type="application/json"
@@ -276,7 +278,7 @@ class TestAPI(TestCase):
         """Test POST new deal."""
         response = self.client.post(
             path="/api/deals",
-            data={"buyer_id": 2, "offer_id": 55},
+            data={"buyer_id": 2, "offer_id": 55, "amount": 100},
             content_type="application/json",
         )
         self.assertEqual(response.status_code, 404)
@@ -284,7 +286,15 @@ class TestAPI(TestCase):
         # test user can not buy own offer
         response = self.client.post(
             path="/api/deals",
-            data={"buyer_id": 1, "offer_id": 1},
+            data={"buyer_id": 1, "offer_id": 1, "amount": 100},
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 400)
+
+        # test user can not order more than offer has
+        response = self.client.post(
+            path="/api/deals",
+            data={"buyer_id": 1, "offer_id": 1, "amount": 100000},
             content_type="application/json",
         )
         self.assertEqual(response.status_code, 400)

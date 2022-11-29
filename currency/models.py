@@ -92,6 +92,9 @@ class Deal(models.Model):
     offer = models.ForeignKey(
         to="Offer", on_delete=models.PROTECT, verbose_name="Offer"
     )
+    amount = models.DecimalField(
+        decimal_places=2, max_digits=11, blank=False, null=False, verbose_name="Amount"
+    )
     deal_time = models.DateTimeField(auto_now=True, verbose_name="Time")
 
     def __str__(self):

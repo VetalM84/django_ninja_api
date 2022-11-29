@@ -1,8 +1,8 @@
 """API routes."""
+from decimal import Decimal
 from typing import List
 
 from django.contrib.auth.models import User
-from django.db import IntegrityError
 from django.db.models import ProtectedError
 from django.shortcuts import get_object_or_404
 from ninja import NinjaAPI
@@ -170,10 +170,13 @@ def get_all_deals(request):
 def add_new_deal(request, payload: DealIn):
     """Add new deal."""
     offer = get_object_or_404(Offer, pk=payload.offer_id)
-    if not offer.active_state or offer.seller.pk == payload.buyer_id:
+    if (
+        not offer.active_state
+        or offer.seller.pk == payload.buyer_id
+        or offer.amount < payload.amount
+    ):
         return 400, {"message": "You can't make a deal to this offer"}
-    try:
-        deal = Deal.objects.create(**payload.dict())
-        return 201, deal
-    except IntegrityError:
-        return 400, {"message": "You can't make a deal to this offer"}
+    offer.amount -= Decimal(payload.amount)
+    offer.save()
+    deal = Deal.objects.create(**payload.dict())
+    return 201, deal
