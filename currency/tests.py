@@ -1,7 +1,5 @@
 """Test cases for Django API framework."""
 
-from unittest import skip
-
 from django.contrib.auth.models import User
 from django.test import TestCase
 
@@ -74,6 +72,7 @@ class TestAPI(TestCase):
             offer_id=1,
             amount=100,
         )
+        cls.token = api.create_token("TestUserName")
 
     @classmethod
     def tearDownClass(cls):
@@ -82,8 +81,7 @@ class TestAPI(TestCase):
 
     def setUp(self):
         """Set up method."""
-        self.headers = {"Content-Type": "application/json", "token": "token"}
-
+        self.headers = {"HTTP_AUTHORIZATION": f"Bearer {self.token}"}
         print("SetUp")
 
     def tearDown(self):
@@ -93,8 +91,17 @@ class TestAPI(TestCase):
     def test_create_token(self):
         """Test create token method."""
         token = api.create_token("TestUserName")
-        print(type(token))
         self.assertTrue(token, str)
+
+    def test_sign_in(self):
+        """Test Sing in."""
+        data = {"username": "TestUserName", "password": "test"}
+        response = self.client.post(
+            path="/api/sign_in",
+            data=data,
+            # content_type="application/x-www-form-urlencoded",
+        )
+        self.assertEqual(response.status_code, 200)
 
     def test_server_status(self):
         """Test server status response."""
@@ -132,7 +139,8 @@ class TestAPI(TestCase):
             path="/api/currencies",
             data=data,
             content_type="application/json",
-            headers=self.headers,
+            **{"HTTP_AUTHORIZATION": f"Bearer {self.token}"},
+            follow=True,
         )
         self.assertEqual(response.status_code, 201)
 
@@ -144,7 +152,10 @@ class TestAPI(TestCase):
             "image": "/uah.jpg",
         }
         response = self.client.post(
-            path="/api/currencies", data=data, content_type="application/json"
+            path="/api/currencies",
+            data=data,
+            content_type="application/json",
+            **{"HTTP_AUTHORIZATION": f"Bearer {self.token}"},
         )
         self.assertEqual(response.status_code, 400)
 
@@ -156,7 +167,10 @@ class TestAPI(TestCase):
             "image": "/uah.jpg",
         }
         response = self.client.put(
-            path="/api/currencies/1", data=data, content_type="application/json"
+            path="/api/currencies/1",
+            data=data,
+            content_type="application/json",
+            **{"HTTP_AUTHORIZATION": f"Bearer {self.token}"},
         )
         self.assertEqual(response.status_code, 200)
 
@@ -168,21 +182,30 @@ class TestAPI(TestCase):
             "image": "/uah.jpg",
         }
         response = self.client.put(
-            path="/api/currencies/111", data=data, content_type="application/json"
+            path="/api/currencies/111",
+            data=data,
+            content_type="application/json",
+            **{"HTTP_AUTHORIZATION": f"Bearer {self.token}"},
         )
         self.assertEqual(response.status_code, 404)
 
     def test_delete_currency(self):
         """Test DELETE currency."""
-        response = self.client.delete(path="/api/currencies/3")
+        response = self.client.delete(
+            path="/api/currencies/3", **{"HTTP_AUTHORIZATION": f"Bearer {self.token}"}
+        )
         self.assertEqual(response.status_code, 204)
 
     def test_delete_currency_404_400(self):
         """Test DELETE currency fail."""
-        response = self.client.delete(path="/api/currencies/111")
+        response = self.client.delete(
+            path="/api/currencies/111", **{"HTTP_AUTHORIZATION": f"Bearer {self.token}"}
+        )
         self.assertEqual(response.status_code, 404)
 
-        response = self.client.delete(path="/api/currencies/1")
+        response = self.client.delete(
+            path="/api/currencies/1", **{"HTTP_AUTHORIZATION": f"Bearer {self.token}"}
+        )
         self.assertEqual(response.status_code, 400)
 
     def test_get_single_offer(self):
@@ -202,7 +225,10 @@ class TestAPI(TestCase):
 
     def test_get_user_offers(self):
         """Test GET all user offers."""
-        response = self.client.get(path="/api/users/1/offers?limit=100&offset=0")
+        response = self.client.get(
+            path="/api/users/1/offers?limit=100&offset=0",
+            **{"HTTP_AUTHORIZATION": f"Bearer {self.token}"},
+        )
         self.assertContains(response=response, text='"active_state": true')
 
     def test_get_all_offers_by_sell_currency(self):
@@ -220,7 +246,10 @@ class TestAPI(TestCase):
             "seller_id": 2,
         }
         response = self.client.post(
-            path="/api/offers", data=data, content_type="application/json"
+            path="/api/offers",
+            data=data,
+            content_type="application/json",
+            **{"HTTP_AUTHORIZATION": f"Bearer {self.token}"},
         )
         self.assertEqual(response.status_code, 201)
 
@@ -228,7 +257,10 @@ class TestAPI(TestCase):
         """Test toggle offer state (enable/disable)."""
         data = {"active_state": False}
         response = self.client.patch(
-            path="/api/offers/1", data=data, content_type="application/json"
+            path="/api/offers/1",
+            data=data,
+            content_type="application/json",
+            **{"HTTP_AUTHORIZATION": f"Bearer {self.token}"},
         )
         self.assertEqual(response.status_code, 200)
 
@@ -236,26 +268,37 @@ class TestAPI(TestCase):
         """Test toggle offer state (enable/disable) fails."""
         data = {"active_state": True}
         response = self.client.patch(
-            path="/api/offers/1111", data=data, content_type="application/json"
+            path="/api/offers/1111",
+            data=data,
+            content_type="application/json",
+            **{"HTTP_AUTHORIZATION": f"Bearer {self.token}"},
         )
         self.assertEqual(response.status_code, 404)
 
     def test_delete_offer(self):
         """Test DELETE offer."""
-        response = self.client.delete(path="/api/offers/2")
+        response = self.client.delete(
+            path="/api/offers/2", **{"HTTP_AUTHORIZATION": f"Bearer {self.token}"}
+        )
         self.assertEqual(response.status_code, 204)
 
     def test_delete_offer_404_400(self):
         """Test DELETE offer fails."""
-        response = self.client.delete(path="/api/offers/111")
+        response = self.client.delete(
+            path="/api/offers/111", **{"HTTP_AUTHORIZATION": f"Bearer {self.token}"}
+        )
         self.assertEqual(response.status_code, 404)
 
-        response = self.client.delete(path="/api/offers/1")
+        response = self.client.delete(
+            path="/api/offers/1", **{"HTTP_AUTHORIZATION": f"Bearer {self.token}"}
+        )
         self.assertEqual(response.status_code, 400)
 
     def test_get_user_info(self):
         """Test GET user profile information with offers and deals."""
-        response = self.client.get(path="/api/users/1")
+        response = self.client.get(
+            path="/api/users/1", **{"HTTP_AUTHORIZATION": f"Bearer {self.token}"}
+        )
         self.assertContains(response=response, text="offers")
         self.assertContains(response=response, text="deal")
 
@@ -282,7 +325,10 @@ class TestAPI(TestCase):
             "amount": 100,
         }
         response = self.client.post(
-            path="/api/deals", data=data, content_type="application/json"
+            path="/api/deals",
+            data=data,
+            content_type="application/json",
+            **{"HTTP_AUTHORIZATION": f"Bearer {self.token}"},
         )
         self.assertEqual(response.status_code, 201)
 
@@ -292,6 +338,7 @@ class TestAPI(TestCase):
             path="/api/deals",
             data={"buyer_id": 2, "offer_id": 55, "amount": 100},
             content_type="application/json",
+            **{"HTTP_AUTHORIZATION": f"Bearer {self.token}"},
         )
         self.assertEqual(response.status_code, 404)
 
@@ -300,6 +347,7 @@ class TestAPI(TestCase):
             path="/api/deals",
             data={"buyer_id": 1, "offer_id": 1, "amount": 100},
             content_type="application/json",
+            **{"HTTP_AUTHORIZATION": f"Bearer {self.token}"},
         )
         self.assertEqual(response.status_code, 400)
 
@@ -308,5 +356,6 @@ class TestAPI(TestCase):
             path="/api/deals",
             data={"buyer_id": 1, "offer_id": 1, "amount": 100000},
             content_type="application/json",
+            **{"HTTP_AUTHORIZATION": f"Bearer {self.token}"},
         )
         self.assertEqual(response.status_code, 400)
