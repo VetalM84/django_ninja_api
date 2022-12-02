@@ -16,6 +16,13 @@ class CurrencyBase(Schema):
     image: str
 
 
+class CurrencyOut(CurrencyBase):
+    """Base currency schema for GET method, response."""
+
+    offers_to_sell: int
+    offers_to_buy: int
+
+
 class CurrencyIn(CurrencyBase):
     """Currency schema for POST method."""
 

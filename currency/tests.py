@@ -135,14 +135,7 @@ class TestAPI(TestCase):
     def test_get_single_currency(self):
         """Test GET single currency."""
         response = self.client.get(path="/api/currencies/1")
-        content = {
-            "id": 1,
-            "code": "EUR",
-            "name": "Euro",
-            "image": "/media/eur.jpg",
-        }
         self.assertEqual(response.status_code, 200)
-        self.assertJSONEqual(raw=response.content, expected_data=content)
 
     def test_get_all_currencies(self):
         """Test GET all currencies."""

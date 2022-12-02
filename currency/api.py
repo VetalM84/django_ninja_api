@@ -8,7 +8,7 @@ from typing import List
 import jwt
 from django.contrib.auth.hashers import check_password
 from django.contrib.auth.models import User
-from django.db.models import ProtectedError
+from django.db.models import Count, ProtectedError
 from django.shortcuts import get_object_or_404
 from ninja import Form, NinjaAPI
 from ninja.pagination import paginate
@@ -18,6 +18,7 @@ from currency.models import Currency, Deal, Offer
 from currency.schemas import (
     CurrencyBase,
     CurrencyIn,
+    CurrencyOut,
     DealBase,
     DealExtraDataOut,
     DealIn,
@@ -111,12 +112,13 @@ def get_single_currency(request, currency_id: int):
     return currency
 
 
-@api.get("/currencies", response=List[CurrencyBase], tags=["Currency"])
+@api.get("/currencies", response=List[CurrencyOut], tags=["Currency"])
 @paginate()
 def get_all_currencies(request):
     """Get all currencies."""
-    # currency_list = Currency.objects.annotate(offers_count=Count("currencies_to_sell"))
-    currencies = Currency.objects.all()
+    currencies = Currency.objects.annotate(
+        offers_to_sell=Count("currencies_to_sell", distinct=True)
+    ).annotate(offers_to_buy=Count("currencies_to_buy", distinct=True))
     return currencies
 
 
