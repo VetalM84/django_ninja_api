@@ -1,4 +1,5 @@
 """API routes."""
+
 import datetime
 from datetime import timezone
 from decimal import Decimal
@@ -10,7 +11,6 @@ from django.contrib.auth.models import User
 from django.db.models import ProtectedError
 from django.shortcuts import get_object_or_404
 from ninja import Form, NinjaAPI
-from ninja.errors import ValidationError
 from ninja.pagination import paginate
 from ninja.security import HttpBearer
 
@@ -21,11 +21,13 @@ from currency.schemas import (
     DealBase,
     DealExtraDataOut,
     DealIn,
-    ErrorMsg,
+    MessageOut,
     OfferBase,
     OfferIn,
     OfferState,
     OfferWithDealOut,
+    TokenOut,
+    UserBase,
     UserExtraDataOut,
 )
 from django_ninja_api import settings
@@ -62,17 +64,38 @@ class AuthBearer(HttpBearer):
         return username
 
 
-@api.post("/sign_in", auth=None)
+@api.post(
+    "/sign_in",
+    auth=None,
+    response={200: TokenOut, 422: MessageOut},
+    tags=["Authentication"],
+)
 def sign_in(request, username: str = Form(...), password: str = Form(...)):
     """Obtain a token for further auth."""
     user_model = get_object_or_404(User, username=username)
 
     passwords_match = check_password(password, user_model.password)
     if not passwords_match:
-        raise ValidationError([{"error": "Wrong password"}])
+        return 422, {"message": "Wrong password"}
 
     token = create_token(user_model.username)
-    return {"token": token}
+    return 200, {"token": token}
+
+
+@api.post(
+    "/sign_up",
+    auth=None,
+    response={201: UserBase, 422: MessageOut},
+    tags=["Authentication"],
+)
+def sign_up(request, username: str = Form(...), password: str = Form(...)):
+    """Sign the user up."""
+    try:
+        User.objects.get(username=username)
+        return 422, {"message": "User already exists"}
+    except User.DoesNotExist:
+        new_user = User.objects.create_user(username=username, password=password)
+        return 201, new_user
 
 
 @api.get("/", tags=["Server status"])
@@ -99,7 +122,7 @@ def get_all_currencies(request):
 
 @api.post(
     "/currencies",
-    response={201: CurrencyBase, 400: ErrorMsg},
+    response={201: CurrencyBase, 400: MessageOut},
     tags=["Currency"],
     auth=AuthBearer(),
 )
@@ -128,7 +151,7 @@ def edit_currency(request, currency_id: int, payload: CurrencyIn):
 
 @api.delete(
     "/currencies/{currency_id}",
-    response={204: None, 400: ErrorMsg},
+    response={204: None, 400: MessageOut},
     tags=["Currency"],
     auth=AuthBearer(),
 )
@@ -205,7 +228,7 @@ def toggle_offer_state(request, offer_id, payload: OfferState):
 
 @api.delete(
     "/offers/{offer_id}",
-    response={204: None, 400: ErrorMsg},
+    response={204: None, 400: MessageOut},
     tags=["Offer"],
     auth=AuthBearer(),
 )
@@ -242,7 +265,10 @@ def get_all_deals(request):
 
 
 @api.post(
-    "/deals", response={201: DealBase, 400: ErrorMsg}, tags=["Deal"], auth=AuthBearer()
+    "/deals",
+    response={201: DealBase, 400: MessageOut},
+    tags=["Deal"],
+    auth=AuthBearer(),
 )
 def add_new_deal(request, payload: DealIn):
     """Add new deal."""

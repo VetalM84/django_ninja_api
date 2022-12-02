@@ -96,12 +96,33 @@ class TestAPI(TestCase):
     def test_sign_in(self):
         """Test Sing in."""
         data = {"username": "TestUserName", "password": "test"}
-        response = self.client.post(
-            path="/api/sign_in",
-            data=data,
-            # content_type="application/x-www-form-urlencoded",
-        )
+        response = self.client.post(path="/api/sign_in", data=data)
+        # or like this
+        # data=f"username=TestUserName&password=test"
+        # content_type="application/x-www-form-urlencoded"
         self.assertEqual(response.status_code, 200)
+
+    def test_sign_in_404_422(self):
+        """Test Sing in fails."""
+        data = {"username": "TestUser404", "password": "test"}
+        response = self.client.post(path="/api/sign_in", data=data)
+        self.assertEqual(response.status_code, 404)
+
+        data = {"username": "TestUserName", "password": "wrong"}
+        response = self.client.post(path="/api/sign_in", data=data)
+        self.assertEqual(response.status_code, 422)
+
+    def test_sign_up(self):
+        """Test Sing up."""
+        data = {"username": "NewTestUserName", "password": "newtest"}
+        response = self.client.post(path="/api/sign_up", data=data)
+        self.assertEqual(response.status_code, 201)
+
+    def test_sign_up_422(self):
+        """Test Sing up fails."""
+        data = {"username": "TestUserName", "password": "test"}
+        response = self.client.post(path="/api/sign_up", data=data)
+        self.assertEqual(response.status_code, 422)
 
     def test_server_status(self):
         """Test server status response."""

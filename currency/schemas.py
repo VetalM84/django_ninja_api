@@ -91,7 +91,13 @@ class UserExtraDataOut(UserBase):
     offers: List[OfferWithDealOut]
 
 
-class ErrorMsg(Schema):
-    """Base schema for error message response."""
+class MessageOut(Schema):
+    """Base schema for message response."""
 
     message: str
+
+
+class TokenOut(Schema):
+    """Base schema for token response."""
+
+    token: str
