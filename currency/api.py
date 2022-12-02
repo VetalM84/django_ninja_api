@@ -6,6 +6,7 @@ from decimal import Decimal
 from typing import List
 
 import jwt
+from asgiref.sync import sync_to_async
 from django.contrib.auth.hashers import check_password
 from django.contrib.auth.models import User
 from django.db.models import Count, ProtectedError
@@ -100,15 +101,15 @@ def sign_up(request, username: str = Form(...), password: str = Form(...)):
 
 
 @api.get("/", tags=["Server status"])
-def server_status(request):
+async def server_status(request):
     """Check server health status."""
     return {"Server": "running..."}
 
 
 @api.get("/currencies/{currency_id}", response=CurrencyBase, tags=["Currency"])
-def get_single_currency(request, currency_id: int):
+async def get_single_currency(request, currency_id: int):
     """Get single currency."""
-    currency = get_object_or_404(Currency, pk=currency_id)
+    currency = await sync_to_async(get_object_or_404)(Currency, pk=currency_id)
     return currency
 
 
@@ -128,12 +129,14 @@ def get_all_currencies(request):
     tags=["Currency"],
     auth=AuthBearer(),
 )
-def add_new_currency(request, payload: CurrencyIn):
+async def add_new_currency(request, payload: CurrencyIn):
     """Add new currency."""
-    if Currency.objects.filter(code__iexact=payload.code).exists():
+    try:
+        await Currency.objects.aget(code=payload.code)
         return 400, {"message": "Currency with that code already exists"}
-    currency = Currency.objects.create(**payload.dict())
-    return 201, currency
+    except Currency.DoesNotExist:
+        currency = await Currency.objects.acreate(**payload.dict())
+        return 201, currency
 
 
 @api.put(
@@ -142,12 +145,12 @@ def add_new_currency(request, payload: CurrencyIn):
     tags=["Currency"],
     auth=AuthBearer(),
 )
-def edit_currency(request, currency_id: int, payload: CurrencyIn):
+async def edit_currency(request, currency_id: int, payload: CurrencyIn):
     """Edit currency."""
-    currency = get_object_or_404(Currency, pk=currency_id)
+    currency = await sync_to_async(get_object_or_404)(Currency, pk=currency_id)
     for attr, value in payload.dict().items():
         setattr(currency, attr, value)
-    currency.save()
+    await sync_to_async(currency.save)()
     return 200, currency
 
 
@@ -157,19 +160,22 @@ def edit_currency(request, currency_id: int, payload: CurrencyIn):
     tags=["Currency"],
     auth=AuthBearer(),
 )
-def delete_currency(request, currency_id: int):
+async def delete_currency(request, currency_id: int):
     """Delete currency."""
     try:
-        get_object_or_404(Currency, pk=currency_id).delete()
+        currency = await sync_to_async(get_object_or_404)(Currency, pk=currency_id)
+        await sync_to_async(currency.delete)()
         return 204, None
     except ProtectedError:
         return 400, {"message": "You can't delete currency having any offer."}
 
 
 @api.get("/offers/{offer_id}", response=OfferWithDealOut, tags=["Offer"])
-def get_single_offer(request, offer_id: int):
+async def get_single_offer(request, offer_id: int):
     """Get single offer with corresponding deal if any."""
-    offer = get_object_or_404(Offer, pk=offer_id)
+    offer = await sync_to_async(get_object_or_404)(
+        Offer.objects.prefetch_related("deal_set"), pk=offer_id
+    )
     return offer
 
 
@@ -207,9 +213,9 @@ def get_all_offers_by_sell_currency(request, currency_to_sell_id):
 
 
 @api.post("/offers", response={201: OfferBase}, tags=["Offer"], auth=AuthBearer())
-def add_new_offer(request, payload: OfferIn):
+async def add_new_offer(request, payload: OfferIn):
     """Add new offer."""
-    offer = Offer.objects.create(**payload.dict())
+    offer = await Offer.objects.acreate(**payload.dict())
     return 201, offer
 
 
@@ -220,11 +226,11 @@ def add_new_offer(request, payload: OfferIn):
     exclude_unset=True,
     auth=AuthBearer(),
 )
-def toggle_offer_state(request, offer_id, payload: OfferState):
+async def toggle_offer_state(request, offer_id, payload: OfferState):
     """Toggle offer state (enable/disable)."""
-    offer = get_object_or_404(Offer, pk=offer_id)
+    offer = await sync_to_async(get_object_or_404)(Offer, pk=offer_id)
     offer.active_state = payload.active_state
-    offer.save()
+    await sync_to_async(offer.save)()
     return offer
 
 
@@ -234,11 +240,11 @@ def toggle_offer_state(request, offer_id, payload: OfferState):
     tags=["Offer"],
     auth=AuthBearer(),
 )
-def delete_offer(request, offer_id: int):
+async def delete_offer(request, offer_id: int):
     """Delete offer."""
     try:
-        offer = get_object_or_404(Offer, pk=offer_id)
-        offer.delete()
+        offer = await sync_to_async(get_object_or_404)(Offer, pk=offer_id)
+        await sync_to_async(offer.delete)()
         return 204, None
     except ProtectedError:
         return 400, {"message": "You can't delete an offer having any deal"}
@@ -247,9 +253,11 @@ def delete_offer(request, offer_id: int):
 @api.get(
     "/users/{user_id}", response=UserExtraDataOut, tags=["User"], auth=AuthBearer()
 )
-def get_user_info(request, user_id):
+async def get_user_info(request, user_id):
     """Get user profile information with offers and deals."""
-    user = get_object_or_404(User, pk=user_id)
+    user = await sync_to_async(get_object_or_404)(
+        User.objects.prefetch_related("offers__deal_set"), pk=user_id
+    )
     return user
 
 
