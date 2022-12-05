@@ -72,9 +72,9 @@ class AuthBearer(HttpBearer):
     response={200: TokenOut, 422: MessageOut},
     tags=["Authentication"],
 )
-def sign_in(request, username: str = Form(...), password: str = Form(...)):
+async def sign_in(request, username: str = Form(...), password: str = Form(...)):
     """Obtain a token for further auth."""
-    user_model = get_object_or_404(User, username=username)
+    user_model = await sync_to_async(get_object_or_404)(User, username=username)
 
     passwords_match = check_password(password, user_model.password)
     if not passwords_match:
@@ -90,13 +90,13 @@ def sign_in(request, username: str = Form(...), password: str = Form(...)):
     response={201: UserBase, 422: MessageOut},
     tags=["Authentication"],
 )
-def sign_up(request, username: str = Form(...), password: str = Form(...)):
+async def sign_up(request, username: str = Form(...), password: str = Form(...)):
     """Sign the user up."""
     try:
-        User.objects.get(username=username)
+        await User.objects.aget(username=username)
         return 422, {"message": "User already exists"}
     except User.DoesNotExist:
-        new_user = User.objects.create_user(username=username, password=password)
+        new_user = await sync_to_async(User.objects.create_user)(username=username, password=password)
         return 201, new_user
 
 
@@ -262,9 +262,11 @@ async def get_user_info(request, user_id):
 
 
 @api.get("/deals/{deal_id}", response=DealExtraDataOut, tags=["Deal"])
-def get_single_deal(request, deal_id):
+async def get_single_deal(request, deal_id):
     """Get single deal."""
-    deal = get_object_or_404(Deal, pk=deal_id)
+    deal = await sync_to_async(get_object_or_404)(
+        Deal.objects.select_related("offer"), pk=deal_id
+    )
     return deal
 
 
@@ -282,16 +284,19 @@ def get_all_deals(request, offer_id: int):
     tags=["Deal"],
     auth=AuthBearer(),
 )
-def add_new_deal(request, payload: DealIn):
+async def add_new_deal(request, payload: DealIn):
     """Add new deal."""
-    offer = get_object_or_404(Offer, pk=payload.offer_id)
+    offer = await sync_to_async(get_object_or_404)(
+        Offer.objects.select_related("seller"), pk=payload.offer_id
+    )
     if (
         not offer.active_state
         or offer.seller.pk == payload.buyer_id
         or offer.amount < payload.amount
     ):
         return 400, {"message": "You can't make a deal to this offer"}
+
     offer.amount -= Decimal(payload.amount)
-    offer.save()
-    deal = Deal.objects.create(**payload.dict())
+    await sync_to_async(offer.save)()
+    deal = await Deal.objects.acreate(**payload.dict())
     return 201, deal
