@@ -268,9 +268,11 @@ def get_single_deal(request, deal_id):
     return deal
 
 
-@api.get("/deals", response=List[DealBase], tags=["Deal"])
-def get_all_deals(request):
-    deals = Deal.objects.all()
+@api.get("/deals/{offer_id}/offer", response=List[DealBase], tags=["Deal"])
+@paginate()
+def get_all_deals(request, offer_id: int):
+    """Get all deals for corresponding offer."""
+    deals = Deal.objects.filter(offer_id=offer_id)
     return deals
 
 

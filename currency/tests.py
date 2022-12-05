@@ -327,8 +327,8 @@ class TestAPI(TestCase):
         self.assertEqual(response.status_code, 404)
 
     def test_get_all_deals(self):
-        """Test GET all deals."""
-        response = self.client.get(path="/api/deals?limit=100&offset=0")
+        """Test GET all deals for corresponding offer."""
+        response = self.client.get(path="/api/deals/1/offer?limit=100&offset=0")
         self.assertEqual(response.status_code, 200)
 
     def test_add_new_deal(self):
